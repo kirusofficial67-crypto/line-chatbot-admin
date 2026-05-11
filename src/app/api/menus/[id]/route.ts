@@ -36,10 +36,11 @@ const updateSchema = z.object({
   shippingMapUrl: z.string().optional(),
 })
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const { id } = await params
   const body = await req.json()
   const parsed = updateSchema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
@@ -58,7 +59,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   )
 
   const menu = await prisma.menu.update({
-    where: { id: params.id },
+    where: { id },
     data: {
       ...cleanData,
       ...(notificationTargetIds !== undefined && {
@@ -82,10 +83,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   return NextResponse.json(menu)
 }
 
-export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  await prisma.menu.delete({ where: { id: params.id } })
+  const { id } = await params
+  await prisma.menu.delete({ where: { id } })
   return NextResponse.json({ success: true })
 }

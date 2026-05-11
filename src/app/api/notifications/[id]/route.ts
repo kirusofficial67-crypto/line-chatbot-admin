@@ -10,26 +10,28 @@ const updateSchema = z.object({
   isActive: z.boolean().optional(),
 })
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const { id } = await params
   const body = await req.json()
   const parsed = updateSchema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
 
   const target = await prisma.notificationTarget.update({
-    where: { id: params.id },
+    where: { id },
     data: parsed.data,
   })
 
   return NextResponse.json(target)
 }
 
-export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  await prisma.notificationTarget.delete({ where: { id: params.id } })
+  const { id } = await params
+  await prisma.notificationTarget.delete({ where: { id } })
   return NextResponse.json({ success: true })
 }
