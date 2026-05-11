@@ -12,8 +12,103 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Loader2, Plus, Trash2, GripVertical } from 'lucide-react'
+import { Loader2, Plus, Trash2, GripVertical, Upload, Link, ImageIcon } from 'lucide-react'
 import type { NotificationTarget, Part, MenuWithNotifications } from '@/types/menu'
+
+// ===== Image Upload Component =====
+function ImageUploadInput({ value, onChange, size = 'md' }: {
+  value: string
+  onChange: (url: string) => void
+  size?: 'sm' | 'md'
+}) {
+  const [tab, setTab] = useState<'url' | 'upload'>('url')
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState('')
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    setUploadError('')
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/upload', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Upload failed')
+      onChange(data.url)
+      setTab('url')
+    } catch (err: unknown) {
+      setUploadError(err instanceof Error ? err.message : 'Upload failed')
+    } finally {
+      setUploading(false)
+      e.target.value = ''
+    }
+  }
+
+  const inputClass = size === 'sm' ? 'text-sm h-8' : ''
+
+  return (
+    <div className="space-y-2">
+      {/* Tab toggle */}
+      <div className="flex gap-1 p-0.5 bg-muted rounded-md w-fit">
+        <button
+          type="button"
+          onClick={() => setTab('url')}
+          className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+            tab === 'url' ? 'bg-white shadow text-foreground' : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Link className="h-3 w-3" /> URL
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab('upload')}
+          className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+            tab === 'upload' ? 'bg-white shadow text-foreground' : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Upload className="h-3 w-3" /> อัพโหลด
+        </button>
+      </div>
+
+      {tab === 'url' ? (
+        <Input
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder="https://example.com/image.jpg"
+          className={inputClass}
+        />
+      ) : (
+        <label className={`flex items-center justify-center gap-2 border-2 border-dashed border-muted-foreground/30 rounded-md cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-colors ${size === 'sm' ? 'p-2' : 'p-4'}`}>
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleFileChange}
+            disabled={uploading}
+          />
+          {uploading ? (
+            <><Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /><span className="text-xs text-muted-foreground">กำลังอัพโหลด...</span></>
+          ) : (
+            <><ImageIcon className="h-4 w-4 text-muted-foreground" /><span className="text-xs text-muted-foreground">เลือกรูปจากเครื่อง (JPG, PNG, GIF, WEBP, max 5MB)</span></>
+          )}
+        </label>
+      )}
+
+      {/* Preview */}
+      {value && (
+        <div className="flex items-center gap-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={value} alt="preview" className="h-12 w-12 object-cover rounded border" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
+          <span className="text-xs text-muted-foreground truncate max-w-[200px]">{value}</span>
+        </div>
+      )}
+
+      {uploadError && <p className="text-xs text-red-500">{uploadError}</p>}
+    </div>
+  )
+}
 
 const defaultPart = (): Part => ({ type: 'TEXT', content: '', imageUrl: '', linkUrl: '', linkLabel: '', order: 0 })
 
@@ -307,8 +402,11 @@ export function MenuDialog({ open, onClose, onSaved, menu, targets, allMenus }: 
           {/* IMAGE */}
           {form.type === 'IMAGE' && !useMultiPart && (
             <div className="space-y-1">
-              <Label>URL รูปภาพ</Label>
-              <Input value={form.imageUrl} onChange={e => set('imageUrl', e.target.value)} placeholder="https://..." />
+              <Label>รูปภาพ</Label>
+              <ImageUploadInput
+                value={form.imageUrl}
+                onChange={v => set('imageUrl', v)}
+              />
             </div>
           )}
 
@@ -437,11 +535,10 @@ export function MenuDialog({ open, onClose, onSaved, menu, targets, allMenus }: 
 
                       {part.type === 'IMAGE' && (
                         <div className="space-y-1.5">
-                          <Input
+                          <ImageUploadInput
                             value={part.imageUrl ?? ''}
-                            onChange={e => updatePart(idx, 'imageUrl', e.target.value)}
-                            placeholder="URL รูปภาพ https://..."
-                            className="text-sm"
+                            onChange={v => updatePart(idx, 'imageUrl', v)}
+                            size="sm"
                           />
                           <Input
                             value={part.content ?? ''}
