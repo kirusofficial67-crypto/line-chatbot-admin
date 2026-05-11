@@ -31,3 +31,6 @@ Thumbs.db
 # Prisma (SQLite dev database only)
 *.db
 *.db-journal
+
+.vercel
+.env*.local

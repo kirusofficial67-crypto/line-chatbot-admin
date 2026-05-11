@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { put } from '@vercel/blob'
+
+const CLOUDINARY_CLOUD_NAME = 'dxs6gott6'
+const CLOUDINARY_UPLOAD_PRESET = 'line-chatbot'
 
 export async function POST(req: NextRequest) {
   try {
@@ -26,13 +28,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'File size must be less than 5MB' }, { status: 400 })
     }
 
-    const filename = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`
+    // Upload to Cloudinary
+    const cloudinaryForm = new FormData()
+    cloudinaryForm.append('file', file)
+    cloudinaryForm.append('upload_preset', CLOUDINARY_UPLOAD_PRESET)
+    cloudinaryForm.append('folder', 'line-chatbot')
 
-    const blob = await put(`menu-images/${filename}`, file, {
-      access: 'public',
-    })
+    const res = await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+      { method: 'POST', body: cloudinaryForm }
+    )
 
-    return NextResponse.json({ url: blob.url })
+    const data = await res.json()
+
+    if (!res.ok) {
+      return NextResponse.json({ error: data.error?.message || 'Upload failed' }, { status: 500 })
+    }
+
+    return NextResponse.json({ url: data.secure_url })
   } catch (error) {
     console.error('Upload error:', error)
     return NextResponse.json(
