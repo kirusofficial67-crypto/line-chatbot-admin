@@ -61,18 +61,29 @@ export async function POST(req: NextRequest) {
 
   const { notificationTargetIds, parts, ...data } = parsed.data
 
-  // กรองค่าว่างออกจาก data ก่อนส่งให้ Prisma
-  const cleanData = Object.fromEntries(
-    Object.entries(data).filter(([, v]) => v !== '' && v !== undefined)
-  )
-
   const menu = await prisma.menu.create({
     data: {
-      ...cleanData,
+      label: data.label,
+      type: data.type,
+      order: data.order ?? 0,
+      isActive: data.isActive ?? true,
+      ...(data.description !== undefined && data.description !== '' && { description: data.description }),
+      ...(data.content !== undefined && data.content !== '' && { content: data.content }),
+      ...(data.imageUrl !== undefined && data.imageUrl !== '' && { imageUrl: data.imageUrl }),
+      ...(data.linkUrl !== undefined && data.linkUrl !== '' && { linkUrl: data.linkUrl }),
+      ...(data.phoneNumber !== undefined && data.phoneNumber !== '' && { phoneNumber: data.phoneNumber }),
+      ...(data.emoji !== undefined && data.emoji !== '' && { emoji: data.emoji }),
+      ...(data.parentId !== undefined && { parentId: data.parentId }),
+      ...(data.shippingCompany !== undefined && data.shippingCompany !== '' && { shippingCompany: data.shippingCompany }),
+      ...(data.shippingAddress !== undefined && data.shippingAddress !== '' && { shippingAddress: data.shippingAddress }),
+      ...(data.shippingZones !== undefined && data.shippingZones !== '' && { shippingZones: data.shippingZones }),
+      ...(data.shippingRates !== undefined && data.shippingRates !== '' && { shippingRates: data.shippingRates }),
+      ...(data.shippingContact !== undefined && data.shippingContact !== '' && { shippingContact: data.shippingContact }),
+      ...(data.shippingMapUrl !== undefined && data.shippingMapUrl !== '' && { shippingMapUrl: data.shippingMapUrl }),
       ...(notificationTargetIds?.length && {
         notifications: { create: notificationTargetIds.map((id) => ({ targetId: id })) },
       }),
-      ...((parts?.length) && {
+      ...(parts?.length && {
         parts: { create: parts.map((p, i) => ({ type: p.type, content: p.content || null, imageUrl: p.imageUrl || null, linkUrl: p.linkUrl || null, linkLabel: p.linkLabel || null, order: i })) },
       }),
     },
