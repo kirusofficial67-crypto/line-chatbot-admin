@@ -1,0 +1,165 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String   @id @default(cuid())
+  email      String   @unique
+  password   String
+  name       String
+  role       String   @default("ADMIN")
+  lineUserId String?  @unique
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  notifications NotificationTarget[]
+  broadcasts    Broadcast[]
+  @@map("users")
+}
+
+model Menu {
+  id               String   @id @default(cuid())
+  label            String
+  description      String?
+  type             String   @default("REPLY")
+  content          String?
+  imageUrl         String?
+  linkUrl          String?
+  phoneNumber      String?
+  emoji            String?
+  order            Int      @default(0)
+  isActive         Boolean  @default(true)
+  parentId         String?
+  parent           Menu?    @relation("SubMenus", fields: [parentId], references: [id])
+  subMenus         Menu[]   @relation("SubMenus")
+  // Shipping fields
+  shippingCompany  String?
+  shippingAddress  String?
+  shippingZones    String?
+  shippingRates    String?
+  shippingContact  String?
+  shippingMapUrl   String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  notifications MenuNotification[]
+  logs          ChatLog[]
+  parts         MessagePart[]
+  @@map("menus")
+}
+
+model MessagePart {
+  id        String  @id @default(cuid())
+  menuId    String
+  menu      Menu    @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  order     Int     @default(0)
+  type      String  @default("TEXT")
+  content   String?
+  imageUrl  String?
+  linkUrl   String?
+  linkLabel String?
+
+  @@map("message_parts")
+}
+
+model NotificationTarget {
+  id         String   @id @default(cuid())
+  name       String
+  lineUserId String
+  isActive   Boolean  @default(true)
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  menus      MenuNotification[]
+  notifyLogs NotificationLog[]
+  @@map("notification_targets")
+}
+
+model MenuNotification {
+  menuId   String
+  targetId String
+  menu     Menu               @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  target   NotificationTarget @relation(fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@id([menuId, targetId])
+  @@map("menu_notifications")
+}
+
+model Customer {
+  id            String   @id @default(cuid())
+  lineUserId    String   @unique
+  displayName   String?
+  pictureUrl    String?
+  statusMessage String?
+  followedAt     DateTime  @default(now())
+  lastActiveAt   DateTime  @default(now())
+  isBlocked      Boolean   @default(false)
+  totalMessages  Int       @default(0)
+  botPausedUntil DateTime?
+
+  chatLogs ChatLog[]
+  @@map("customers")
+}
+
+model ChatLog {
+  id             String    @id @default(cuid())
+  lineUserId     String
+  displayName    String?
+  menuId         String?
+  menu           Menu?     @relation(fields: [menuId], references: [id])
+  customerId     String?
+  customer       Customer? @relation(fields: [customerId], references: [id])
+  action         String
+  messageContent String?
+  createdAt      DateTime  @default(now())
+
+  @@map("chat_logs")
+}
+
+model NotificationLog {
+  id          String              @id @default(cuid())
+  lineUserId  String
+  displayName String?
+  targetId    String?
+  target      NotificationTarget? @relation(fields: [targetId], references: [id])
+  menuLabel   String
+  status      String              @default("SENT")
+  error       String?
+  createdAt   DateTime            @default(now())
+
+  @@map("notification_logs")
+}
+
+model Broadcast {
+  id          String    @id @default(cuid())
+  title       String
+  message     String
+  type        String    @default("TEXT")
+  targetType  String    @default("ALL")
+  sentCount   Int       @default(0)
+  failCount   Int       @default(0)
+  status      String    @default("PENDING")
+  createdById String?
+  createdBy   User?     @relation(fields: [createdById], references: [id])
+  sentAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@map("broadcasts")
+}
+
+model BotSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("bot_settings")
+}
