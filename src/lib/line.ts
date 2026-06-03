@@ -134,7 +134,7 @@ export async function buildMenuFlexMessage(): Promise<FlexMessage> {
         layout: 'vertical',
         contents: [
           { type: 'text', text: '🔥 ' + shopName, weight: 'bold', size: 'xl', color: '#D4AF37' },
-          { type: 'text', text: 'กรุณาเลือกเมนูที่ต้องการ', size: 'xs', color: '#8B7230', margin: 'sm' },
+          { type: 'text', text: 'กรุณาเลือกเมนู | Please select a menu', size: 'xs', color: '#8B7230', margin: 'sm' },
           // Gold accent line
           {
             type: 'box' as const,
