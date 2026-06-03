@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { CustomersClient } from '@/components/customers/customers-client'
+import { SyncFollowersButton } from '@/components/customers/sync-followers-button'
 import { AlertTriangle } from 'lucide-react'
 
 export default async function CustomersPage() {
@@ -15,9 +16,12 @@ export default async function CustomersPage() {
 
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">ข้อมูลลูกค้า</h1>
-          <p className="text-muted-foreground">รายชื่อและประวัติลูกค้าที่เคยแชทกับ Bot ({total} คน)</p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">ข้อมูลลูกค้า</h1>
+            <p className="text-muted-foreground">รายชื่อและประวัติลูกค้าที่เคยแชทกับ Bot ({total} คน)</p>
+          </div>
+          <SyncFollowersButton />
         </div>
         <CustomersClient customers={customers} />
       </div>
